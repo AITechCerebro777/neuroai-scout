@@ -1,3 +1,11 @@
+def check_password():
+    if "password_correct" not in st.session_state:
+        st.text_input("Enter Password to Access ScoutMD", type="password", on_change=lambda: st.session_state.update(password_correct=st.session_state.password == st.secrets["APP_PASSWORD"]), key="password")
+        return False
+    return st.session_state.password_correct
+
+if not check_password():
+    st.stop()
 import streamlit as st
 import pandas as pd
 from google import genai
