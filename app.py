@@ -1,4 +1,4 @@
-import streamlit as st  # MUST BE AT THE VERY TOP
+import streamlit as st  # MUST BE LINE 1
 import pandas as pd
 from google import genai
 from google.genai import types
@@ -6,44 +6,45 @@ import re
 from datetime import datetime
 import os
 
-# --- SECURITY GATE ---
+# --- 1. SECURITY GATE ---
+# This function creates the lock. It must run before any other visual commands.
 def check_password():
-    """Returns `True` if the user had the correct password."""
-    def password_entered():
-        """Checks whether a password entered by the user is correct."""
-        if st.session_state["password"] == st.secrets["APP_PASSWORD"]:
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]  # Don't store the password
-        else:
-            st.session_state["password_correct"] = False
+    if "password_correct" not in st.session_state:
+        st.session_state.password_correct = False
 
-    if st.session_state.get("password_correct", False):
+    if st.session_state.password_correct:
         return True
 
-    # Show input for password
+    # This displays the login box
     st.text_input(
         "Enter Password to Access ScoutMD", 
         type="password", 
-        on_change=password_entered, 
+        on_change=lambda: st.session_state.update(password_correct=st.session_state.password == st.secrets["APP_PASSWORD"]), 
         key="password"
     )
-    if "password_correct" in st.session_state:
-        st.error("😕 Password incorrect")
     return False
 
+# This line tells the app to STOP here if the password isn't correct
 if not check_password():
-    st.stop()  # Stop the app here if password is not correct
+    st.stop()
 
-# --- 1. CONFIGURATION & DARK THEME ---
+# --- 2. CONFIGURATION & DARK THEME ---
+# This part ONLY runs if the password check above is successful.
 st.set_page_config(page_title="NeuroAI Scout", page_icon="⚡", layout="wide")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-    
     .stApp { background-color: #0F172A; font-family: 'Inter', sans-serif; color: #E2E8F0; }
-    [data-testid="stSidebar"] { background-color: #1E293B; border-right: 1px solid #334155; }
     </style>
     """, unsafe_allow_html=True)
 
-# ... (rest of your app code follows below)
+st.title("NeuroAI Speaker Platform")
+st.subheader("The Emerald + Gold Standard Search Engine")
+
+# --- 3. SEARCH INTERFACE ---
+query = st.chat_input("Ex: Find founders building Brain-Computer Interfaces...")
+
+if query:
+    st.write(f"Searching for: {query}")
+    # Your search logic goes here...
