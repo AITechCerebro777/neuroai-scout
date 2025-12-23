@@ -6,15 +6,15 @@ import re
 from datetime import datetime
 import os
 
-# --- 1. SECURITY GATE (Mobile-Friendly Login) ---
+# --- 1. SECURITY GATE (For Mobile & Web Privacy) ---
 def check_password():
     if "password_correct" not in st.session_state:
         st.session_state.password_correct = False
     if st.session_state.password_correct:
         return True
     
-    st.markdown("<h2 style='text-align: center; color: #F59E0B;'>ScoutMD Secure Access</h2>", unsafe_allow_html=True)
-    st.text_input("Enter Password", type="password", 
+    st.markdown("<h2 style='text-align: center; color: #F59E0B;'>ScoutMD Private Access</h2>", unsafe_allow_html=True)
+    st.text_input("Enter Password to Access Platform", type="password", 
                  on_change=lambda: st.session_state.update(password_correct=st.session_state.password == st.secrets["APP_PASSWORD"]), 
                  key="password")
     return False
@@ -22,90 +22,77 @@ def check_password():
 if not check_password():
     st.stop()
 
-# --- 2. PREMIUM THEME & MOBILE RESPONSIVENESS ---
+# --- 2. PREMIUM THEME CONFIGURATION ---
 st.set_page_config(page_title="ScoutMD | NeuroAI", page_icon="🧠", layout="wide")
 
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-    
-    /* Mobile-first background */
     .stApp { background-color: #0F172A; font-family: 'Inter', sans-serif; color: #E2E8F0; }
     
-    /* Emerald + Gold Card Design */
+    /* The Emerald + Gold Card Design */
     .expert-card {
         background: linear-gradient(145deg, #1E293B, #0F172A);
         border: 1px solid #334155;
         border-left: 6px solid #10B981; /* Emerald border */
-        padding: 20px;
+        padding: 25px;
         border-radius: 12px;
-        margin-bottom: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        margin-bottom: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
+    .expert-name { color: #F59E0B; font-size: 26px; font-weight: 800; margin-bottom: 5px; } /* Gold name */
+    .expert-title { color: #94A3B8; font-size: 16px; margin-bottom: 15px; font-weight: 600; }
     
-    .expert-name { color: #F59E0B; font-size: 22px; font-weight: 700; margin-bottom: 2px; } /* Gold name */
-    .expert-title { color: #94A3B8; font-size: 14px; margin-bottom: 12px; font-style: italic; }
-    
-    /* Button that works well on touchscreens */
     .link-button {
         background-color: #10B981;
         color: white !important;
-        padding: 12px 20px;
+        padding: 12px 24px;
         border-radius: 8px;
         text-decoration: none;
-        display: block;
-        text-align: center;
-        margin-top: 15px;
+        display: inline-block;
         font-weight: 700;
+        margin-top: 15px;
+        text-align: center;
     }
-    
     .email-preview {
-        background-color: #0F172A;
+        background-color: #1e293b;
         border: 1px dashed #475569;
         padding: 15px;
-        margin-top: 15px;
+        margin-top: 20px;
         border-radius: 8px;
-        font-size: 13px;
-        color: #CBD5E1;
+        font-size: 14px;
+        line-height: 1.6;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. SIDEBAR (Collapses on Mobile) ---
+# --- 3. SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h1 style='color: #F59E0B; text-align: center;'>ScoutMD 🧠</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='color: #F59E0B;'>ScoutMD 🧠</h1>", unsafe_allow_html=True)
     st.markdown("---")
-    if 'raw_data' in st.session_state:
-        st.download_button("📥 Save Shortlist", 
-                          data=st.session_state.raw_data, 
+    st.success("Verified Neurology Engine")
+    if 'expert_data' in st.session_state:
+        st.download_button("📥 Save Search Results", 
+                          data=st.session_state.expert_data, 
                           file_name=f"NeuroScout_{datetime.now().strftime('%m%d')}.txt",
                           use_container_width=True)
-    st.info("The Emerald + Gold Standard for Neurology Speaker Search.")
 
 # --- 4. MAIN INTERFACE ---
 st.title("NeuroAI Speaker Platform")
-client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
+st.markdown("#### *The Emerald + Gold Standard Search Engine*")
 
-# Search input at the bottom (Standard for mobile apps)
+client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
 query = st.chat_input("Ex: Find founders in Brain-Computer Interfaces...")
 
 if query:
-    with st.spinner("Searching medical databases..."):
-        prompt = f"""
-        Find 3 real-world neurology experts for: {query}.
-        Use these exact labels for each expert:
-        [NAME]
-        [TITLE]
-        [LINK]
-        [BIO]
-        [EMAIL]
-        """
+    with st.spinner("Analyzing Global Databases..."):
+        # This prompt forces the AI to use specific tags so the card-builder doesn't break
+        prompt = f"Find 3 real-world neurology experts for: {query}. Use these exact labels for each expert: [NAME], [TITLE], [LINK], [BIO], [EMAIL]"
         response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
-        st.session_state.raw_data = response.text
+        st.session_state.expert_data = response.text
 
-    # Parse entries into cards
+    # BUILDING THE CARDS
     expert_entries = response.text.split("[NAME]")[1:]
-    
     for entry in expert_entries:
         try:
             name = entry.split("[TITLE]")[0].strip()
@@ -118,7 +105,7 @@ if query:
             <div class="expert-card">
                 <div class="expert-name">{name}</div>
                 <div class="expert-title">{title}</div>
-                <p style="font-size: 14px;">{bio}</p>
+                <p style="color: #cbd5e1;">{bio}</p>
                 <a href="{link}" target="_blank" class="link-button">View Profile / Research</a>
                 <div class="email-preview">
                     <strong style="color: #F59E0B;">✉️ Outreach Draft:</strong><br>{email}
@@ -128,4 +115,4 @@ if query:
         except:
             continue
 else:
-    st.info("Enter a topic below to generate your expert list.")
+    st.info("System Ready. Enter a research topic to generate your expert cards.")
